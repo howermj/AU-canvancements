@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Access Report Download (frm. Access Report Data)
 // @namespace    https://github.com/howermj/AU-canvancements
-// @version      18
+// @version      19
 // @description  Generates a .CSV download of the access report for all students in a course; control in overflow (⋮) menu
 // @author       jamesjonesmath (James Jones)
 // @contributor  howermj + Eve (GPT-5.2 Thinking)
@@ -31,20 +31,20 @@
   /**
    * Viewing a student's profile page now counts as a participation. This can
    * confuse the faculty when student names show up as titles. By default these
-   * are now removed from the data before downloading Set showViewStudent = true
-   * to include these views in the data
+   * are now removed from the data before downloading. Set showViewStudent = true
+   * to include these views in the data.
    */
   const showViewStudent = false;
 
   /**
    * Canvas counts taking a quiz as both a view and a participation. The web
-   * interface subtracts 1 from the views for each participation To repeat that
-   * behavior here, set quizParticipation = true
+   * interface subtracts 1 from the views for each participation. To repeat that
+   * behavior here, set quizParticipation = true.
    */
   const quizParticipation = true;
 
   /**
-   * enrollmentStates defines which students to include in the report Possible
+   * enrollmentStates defines which students to include in the report. Possible
    * values are active, invited, rejected, completed, and inactive. See
    * https://canvas.instructure.com/doc/api/courses.html#method.courses.users
    * for additional information.
@@ -55,7 +55,7 @@
    * There are some analytics available including the last activity, the time
    * spent in the course, the course grade, and course score. The analytics
    * array can contain 'activity' or 'grades' to enable this data. Leave it
-   * blank to omit both
+   * blank to omit both.
    */
   const analytics = [ 'activity', 'grades' ];
 
@@ -69,7 +69,7 @@
    * Some software doesn't like spaces in the headings. You may replace spaces
    * in the column headings by specifying something other than a space for
    * headingSpaces. Example, '' will remove spaces and '_' will replace them
-   * with underscores
+   * with underscores.
    */
   const headingSpaces = ' ';
 
@@ -86,7 +86,7 @@
   /** Advanced Configuration */
 
   /**
-   * Bottlneck js is a library that allows you to throttle requests. This is an
+   * Bottleneck js is a library that allows you to throttle requests. This is an
    * advanced section for those who want to tweak the settings or who have large
    * classes and find that the report is not running. If you exceed the
    * x-rate-limit-remaining value, then Canvas will shut down the requests.
@@ -108,10 +108,15 @@
   const maxConcurrent = 25;
 
   /**
-   * Set debug true for help troubleshooting the process. Leave it false for
-   * normal operations
+   * Native fetch() does not support a 'timeout' option. We implement a real
+   * timeout using AbortController below.
    */
+  const fetchTimeoutMs = 30000;
 
+  /**
+   * Set debug true for help troubleshooting the process. Leave it false for
+   * normal operations.
+   */
   const debug = false;
 
   /**
@@ -233,7 +238,8 @@
   let displaySummary = true;
   let startTime = 0;
   let finishTime = 0;
-  addRosterButton('Access Report Data', 'icon-analytics');
+
+  addRosterButton('Access Report Download', 'icon-analytics');
 
   function addRosterButton(linkText, iconType) {
     if (!document.getElementById(uniqueLinkId)) {
@@ -279,14 +285,14 @@
   function accessReport() {
     initializeGlobals();
     progressbar();
-    startTime = Date.now().toString();
+    startTime = Date.now();
     getSections()
-    .then(getStudentList)
-    .then(checkFailed)
-    .then(makeReport)
-    .catch(function(e){
+      .then(getStudentList)
+      .then(checkFailed)
+      .then(makeReport)
+      .catch(function(e){
         console.log(e);
-    });
+      });
   }
 
   function checkFailed() {
@@ -323,6 +329,7 @@
 
   function fetchResult(url, callback) {
     let links;
+
     return limiter.schedule(function() {
       const options = {
         'method' : 'GET',
@@ -330,9 +337,20 @@
           'accept' : 'application/json',
         },
         'credentials' : 'same-origin',
-        'timeout' : 30000,
       };
-      return fetch(url, options);
+
+      // Real timeout via AbortController (fetch() ignores a 'timeout' option)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(function() {
+        try { controller.abort(); } catch (e) {}
+      }, fetchTimeoutMs);
+
+      options.signal = controller.signal;
+
+      return fetch(url, options)
+        .finally(function() {
+          clearTimeout(timeoutId);
+        });
     }).then(function(res) {
       if (res.ok) {
         links = extractLinks(res.headers.get('link'));
@@ -350,7 +368,7 @@
         } else {
           failedFetches[res.url] = callback;
           if (debug) {
-            console.log(`FAILED FAILED : ${res.url}`);
+            console.log(`FETCH FAILED: ${res.url}`);
           }
         }
         return Promise.resolve(true);
@@ -392,11 +410,18 @@
   }
 
   function extractLinks(hdr) {
-    const linkRegex = new RegExp('^<(.*?)>; rel="(current|first|last|next|prev)"$');
+    // Canvas may omit Link header; be defensive.
+    if (typeof hdr !== 'string' || hdr.trim() === '') {
+      return {};
+    }
+
+    // Make parsing tolerant of leading spaces and extra parameters.
+    const linkRegex = /<([^>]+)>\s*;\s*rel="(current|first|last|next|prev)"/;
     const linkStr = hdr.split(',');
     const links = {};
     for (let i = 0; i < linkStr.length; i++) {
-      const matches = linkRegex.exec(linkStr[i]);
+      const part = linkStr[i].trim();
+      const matches = linkRegex.exec(part);
       if (matches) {
         const linkUrl = matches[1];
         const linkType = matches[2];
@@ -424,7 +449,7 @@
   }
 
   function nextPage(links) {
-    if (typeof links.next === 'undefined') {
+    if (typeof links !== 'object' || typeof links.next === 'undefined') {
       return false;
     }
     const results = [];
@@ -606,7 +631,7 @@
   }
 
   function makeReport() {
-    finishTime = Date.now().toString();
+    finishTime = Date.now();
     if (debug && displaySummary) {
       const execTime = (finishTime - startTime) / 1000;
       console.log(`Fetching Time : ${execTime} seconds`);
@@ -632,15 +657,44 @@
           'type' : 'text/csv;charset=utf-8',
         });
         saveAs(blob, 'access-report.csv');
+      } else {
+        // If there is no student/access data, show a friendly message instead of silently doing nothing.
+        showMessageDialog('Access Report Download', 'No student data to download.');
       }
       activateLink();
+
     }
     return Promise.resolve(true);
   }
 
+  function showMessageDialog(title, message) {
+    // Simple jQuery UI dialog for non-fatal user feedback (e.g., no data).
+    const dialogId = 'jj_message_dialog';
+    if (!document.getElementById(dialogId)) {
+      $('body').append(`<div id="${dialogId}"></div>`);
+      $(`#${dialogId}`).dialog({
+        'title' : title || 'Message',
+        'autoOpen' : false,
+        'modal' : true,
+        'buttons' : [ {
+          'text' : 'Close',
+          'click' : function() {
+            $(this).dialog('close');
+          },
+        }, ],
+      });
+    }
+    const $dlg = $(`#${dialogId}`);
+    $dlg.html(`<p>${String(message || '')}</p>`);
+    $dlg.dialog('option', 'title', title || 'Message');
+    $dlg.dialog('open');
+  }
+
   function eliminateMissingFields(fields) {
+    // Correctly disable activity/grade fields when analytics[] excludes them.
     processAnalytics('activity', [ 'last_activity_at', 'total_activity_time' ]);
     processAnalytics('grades', [ 'current_score', 'current_grade', 'final_score', 'final_grade' ]);
+
     if (typeof disableMissing === 'undefined' || disableMissing) {
       checkMissing();
     }
@@ -654,10 +708,12 @@
 
     function processAnalytics(analyticKey, fieldKeys) {
       if (analytics.indexOf(analyticKey) === -1) {
-        fieldKeys.forEach(function(f) {
-          if (fields.indexOf(`u.${f}`) > -1) {
-            fields[fields.indexOf(`u.${f}`)].disabled = true;
-          }
+        fieldKeys.forEach(function(k) {
+          fields.forEach(function(obj) {
+            if (obj && obj.src === `u.${k}`) {
+              obj.disabled = true;
+            }
+          });
         });
       }
     }
@@ -712,14 +768,20 @@
         return 0;
       }
     });
+
     const CRLF = '\r\n';
     const stripSpaces = (typeof headingSpaces !== 'undefined') ? headingSpaces : ' ';
+
+    // Replace ALL spaces in headings (previously only replaced the first)
     const hdr = fields.map(function(f) {
-      return f.name.replace(' ', stripSpaces);
+      const name = String(f.name);
+      return name.split(' ').join(stripSpaces);
     });
+
     const hdrTxt = hdr.join(',') + CRLF;
     let dataTxt = '';
     const showStudentViews = typeof showViewStudent === 'undefined' ? false : showViewStudent;
+
     for (let j = 0; j < userKeys.length; j++) {
       const userId = userKeys[j];
       dataTxt += getUserCSV(userId);
@@ -739,7 +801,7 @@
           continue;
         }
         for (let k = 0; k < sectionInfo.length; k++) {
-          t += getUserRow(user,item,sectionInfo[k]);
+          t += getUserRow(user, item, sectionInfo[k]);
         }
       }
       return t;
@@ -750,6 +812,7 @@
       const sectionIds = user.section_ids.split(',');
       let sectionCount = 1;
       let separator = false;
+
       if (/^[0-9]+$/.test(multipleSections)) {
         if (hasSections && parseInt(multipleSections, 10) === 1) {
           sectionCount = sectionIds.length;
@@ -757,11 +820,12 @@
       } else {
         separator = multipleSections || ', ';
       }
+
       for (let i = 0; i < sectionCount; i++) {
         let section = {};
         if (separator !== false && sectionIds.length > 1) {
           sectionIds.forEach(function(s) {
-            const secPropKeys = Object.keys(sectionData[s]);
+            const secPropKeys = Object.keys(sectionData[s] || {});
             secPropKeys.forEach(function(key) {
               const value = nullify(sectionData[s][key]);
               if (typeof section[key] === 'undefined') {
@@ -785,7 +849,7 @@
         const field = fieldInfo(f);
         let value = null;
         if (field.src === 's') {
-          value = getValue(section[field.key], f.fmt);
+          value = getValue(section ? section[field.key] : null, f.fmt);
         } else {
           value = getValue(field.src === 'a' ? item[field.key] : user[field.key], f.fmt);
         }
@@ -806,10 +870,10 @@
         value = excelDate(value);
         break;
       case 'minutes':
-        value = parseInt(value, 10) / 60;
+        value = value ? (parseInt(value, 10) / 60) : '';
         break;
       case 'hours':
-        value = parseInt(value, 10) / 3600;
+        value = value ? (parseInt(value, 10) / 3600) : '';
         break;
       default:
         break;
@@ -820,11 +884,13 @@
     function addQuotes(value) {
       if (typeof value === 'string') {
         let quote = false;
+
+        // CSV quoting rules: quote if field contains quote, comma, CR or LF.
         if (value.indexOf('"') > -1) {
           value = value.replace(/"/g, '""');
           quote = true;
         }
-        if (value.indexOf(',') > -1) {
+        if (value.indexOf(',') > -1 || value.indexOf('\n') > -1 || value.indexOf('\r') > -1) {
           quote = true;
         }
         if (quote) {
@@ -833,7 +899,6 @@
       }
       return value;
     }
-
   }
 
   function excelDate(timestamp) {
@@ -897,7 +962,7 @@
   }
 
   function abortAll() {
-    if (typeof limiter !== 'undefined') {
+    if (typeof limiter !== 'undefined' && limiter) {
       limiter.stop();
     }
     aborted = true;
@@ -907,16 +972,17 @@
   function initializeGlobals() {
     const sectionKeys = Object.keys(sectionData);
     if (sectionKeys.length > 0) {
-      sectionKeys.forEach(function(key) {delete sectionData[key]});
+      sectionKeys.forEach(function(key) { delete sectionData[key]; });
     }
     const userKeys = Object.keys(userData);
     if (userKeys.length > 0) {
-      userKeys.forEach(function(key) {delete userData[key]});
+      userKeys.forEach(function(key) { delete userData[key]; });
     }
-    const accessKeys= Object.keys(accessData);
+    const accessKeys = Object.keys(accessData);
     if (accessKeys.length > 0) {
-      accessKeys.forEach(function(key) {delete accessData[key]});
+      accessKeys.forEach(function(key) { delete accessData[key]; });
     }
+
     aborted = false;
     userFetchCount = 0;
     userFetchTotal = 0;
@@ -928,7 +994,10 @@
   }
 
   function activateLink() {
-    document.getElementById(uniqueLinkId).addEventListener('click', setupBottleneck, {
+    const el = document.getElementById(uniqueLinkId);
+    if (!el) return; // Defensive: Canvas UI may not be ready or markup may have changed.
+
+    el.addEventListener('click', setupBottleneck, {
       'once' : true,
     });
   }
