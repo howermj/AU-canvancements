@@ -11,8 +11,8 @@
 // @require      https://cdn.jsdelivr.net/npm/bottleneck@2/light.min.js
 // @require      https://cdn.jsdelivr.net/npm/file-saver/dist/FileSaver.min.js
 // @grant        none
-// @downloadURL  https://raw.githubusercontent.com/howermj/AU-canvancements/access-report-download/access-report-download.user.js
-// @updateURL    https://raw.githubusercontent.com/howermj/AU-canvancements/access-report-download/access-report-download.user.js
+// @downloadURL  https://raw.githubusercontent.com/howermj/AU-canvancements/main/access-report-download/access-report-download.user.js
+// @updateURL    https://raw.githubusercontent.com/howermj/AU-canvancements/main/access-report-download/access-report-download.user.js
 // @supportURL   https://community.canvaslms.com/docs/DOC-6061-obtaining-and-using-access-report-data-for-an-entire-course
 // ==/UserScript==
 
