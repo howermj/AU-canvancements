@@ -2,7 +2,7 @@
 // ==UserScript==
 // @name         Access Report Download (frm. Access Report Data)
 // @namespace    https://github.com/howermj/AU-canvancements
-// @version      19
+// @version      20
 // @description  Generates a .CSV download of the access report for all students in a course; control in overflow (⋮) menu
 // @author       jamesjonesmath (James Jones)
 // @contributor  howermj + Eve (GPT-5.2 Thinking)
