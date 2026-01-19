@@ -6,8 +6,8 @@
 // @description  Allows sorting on any column of the Canvas Course Roster
 // @author       jamesjonesmath (James Jones)
 // @contributor  howermj + Eve (GPT-5.2 Thinking)
-// @match        https://*.instructure.com/courses/*/users
-// @match        https://*.asu.edu/courses/*/users
+// @include      https://*.instructure.com/courses/*/users*
+// @include      https://*.asu.edu/courses/*/users*
 // @require     https://cdn.jsdelivr.net/combine/npm/jquery@3.6.0,npm/tablesorter@2.31.3
 // @grant        none
 // @downloadURL  https://github.com/howermj/AU-canvancements/raw/master/sort_the_roster/sort-the-roster.user.js
