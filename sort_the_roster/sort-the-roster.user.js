@@ -10,8 +10,8 @@
 // @match        https://*.asu.edu/courses/*/users
 // @require     https://cdn.jsdelivr.net/combine/npm/jquery@3.6.0,npm/tablesorter@2.31.3
 // @grant        none
-// @downloadURL  https://github.com/howermj/AU-canvancements/raw/master/sort-the-roster/sort-the-roster.user.js
-// @updateURL    https://github.com/howermj/AU-canvancements/raw/master/sort-the-roster/sort-the-roster.user.js
+// @downloadURL  https://github.com/howermj/AU-canvancements/raw/master/sort_the_roster/sort-the-roster.user.js
+// @updateURL    https://github.com/howermj/AU-canvancements/raw/master/sort_the_roster/sort-the-roster.user.js
 // @supportURL   https://github.com/jamesjonesmath/canvancement/tree/master/roster/sort-roster
 // ==/UserScript==
 
