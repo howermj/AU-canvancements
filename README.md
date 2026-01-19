@@ -30,7 +30,7 @@ Once installed, you can install any script below by clicking its **Install** lin
 | Script Name | Description | Install |
 | --- | --- | --- |
 | **Access Report Download** | Downloads Access Report (“usage”) data for all students in a course as a CSV from the **People** page overflow (⋮) menu. | [Install](https://github.com/howermj/AU-canvancements/raw/master/access-report-download/access-report-download.user.js "Click to Install") |
-| **Sort the Roster** | Enables click-to-sort on any **People (Roster)** table column (click to sort, click again to reverse). Updates as additional users load while scrolling. | [Install](https://github.com/howermj/AU-canvancements/raw/master/sort-the-roster/sort-the-roster.user.js "Click to Install") |
+| **Sort the Roster** | Enables click-to-sort on any **People (Roster)** table column (click to sort, click again to reverse). Updates as additional users load while scrolling. | [Install](https://github.com/howermj/AU-canvancements/raw/master/sort_the_roster/sort-the-roster.user.js "Click to Install") |
 
 > Install links point to the `master` branch and will auto-update when scripts are improved.
 
