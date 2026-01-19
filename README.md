@@ -1,4 +1,5 @@
 # AU-canvancements
 James Jones's Canvancements tweaked to work with Air University Canvas. Visit https://github.com/jamesjonesmath/canvancement for source scripts.
 
-Access Report Download - https://cdn.jsdelivr.net/gh/howermj/AU-canvancements@main/access-report-download/access-report-download.user.js
+Access Report Download - https://github.com/howermj/AU-canvancements/raw/master/access-report-download/access-report-download.user.js
+
